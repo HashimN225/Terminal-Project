@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ubuntu Labs</title>
 
-    <!-- Xterm.js — renders the terminal in browser -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
     <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
-    <!-- Xterm FitAddon — makes terminal resize to fill its container -->
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
 
     <style>
-        /* ── Reset & Base ── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -24,7 +21,6 @@
             flex-direction: column;
         }
 
-        /* ── Top Navigation Bar ── */
         .navbar {
             background: #161b22;
             border-bottom: 1px solid #30363d;
@@ -65,7 +61,6 @@
             color: #8b949e;
         }
 
-        /* ── Main Layout ── */
         .main {
             flex: 1;
             display: flex;
@@ -77,7 +72,6 @@
             margin: 0 auto;
         }
 
-        /* ── Lab Header Card ── */
         .lab-header {
             background: #161b22;
             border: 1px solid #30363d;
@@ -122,7 +116,6 @@
         .badge-docker { background: #2496ed20; color: #2496ed; border: 1px solid #2496ed40; }
         .badge-interactive { background: #238636; color: #3fb950; border: 1px solid #238636; font-size: 11px; }
 
-        /* ── Control Buttons ── */
         .lab-controls {
             display: flex;
             flex-direction: column;
@@ -130,7 +123,6 @@
             gap: 10px;
         }
 
-        /* ── Status Indicator ── */
         .status-row {
             display: flex;
             align-items: center;
@@ -161,7 +153,6 @@
         .status-text.stopped { color: #f85149; }
         .status-text.starting { color: #f0883e; }
 
-        /* Container ID display */
         .container-id {
             font-size: 11px;
             color: #6e7681;
@@ -172,7 +163,6 @@
             border: 1px solid #30363d;
         }
 
-        /* ── Buttons ── */
         .btn {
             padding: 9px 20px;
             border-radius: 8px;
@@ -213,7 +203,6 @@
             gap: 8px;
         }
 
-        /* ── Terminal Container ── */
         .terminal-wrapper {
             background: #161b22;
             border: 1px solid #30363d;
@@ -225,7 +214,6 @@
             min-height: 480px;
         }
 
-        /* Terminal title bar */
         .terminal-titlebar {
             background: #21262d;
             border-bottom: 1px solid #30363d;
@@ -256,14 +244,12 @@
             font-family: 'Courier New', monospace;
         }
 
-        /* The actual xterm.js terminal goes here */
         #terminal {
             flex: 1;
             padding: 12px;
             background: #0d1117;
         }
 
-        /* ── Splash Screen (shown before lab is launched) ── */
         #splash {
             flex: 1;
             display: flex;
@@ -307,7 +293,6 @@
             margin-top: 8px;
         }
 
-        /* ── Loading Overlay ── */
         #loading-overlay {
             display: none;
             flex-direction: column;
@@ -347,7 +332,6 @@
         .loading-step.done { color: #3fb950; }
         .loading-step.active { color: #f0883e; }
 
-        /* ── Info Strip ── */
         .info-strip {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -376,7 +360,6 @@
             font-family: 'Courier New', monospace;
         }
 
-        /* ── Toast notifications ── */
         #toast {
             position: fixed;
             bottom: 24px;
@@ -398,13 +381,11 @@
         #toast.success { border-color: #238636; }
         #toast.error { border-color: #f85149; }
 
-        /* Hidden class */
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<!-- ══════════════════ NAVBAR ══════════════════ -->
 <nav class="navbar">
     <a class="navbar-brand" href="#">
         <div class="logo-icon">🐧</div>
@@ -417,10 +398,8 @@
     </div>
 </nav>
 
-<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
 <main class="main">
 
-    <!-- Lab Header Card -->
     <div class="lab-header">
         <div class="lab-info">
             <h1>🖥️ Ubuntu Interactive Lab</h1>
@@ -433,14 +412,12 @@
         </div>
 
         <div class="lab-controls">
-            <!-- Status Row -->
             <div class="status-row">
                 <div class="status-dot" id="status-dot"></div>
                 <span class="status-text" id="status-text">Not started</span>
                 <span class="container-id hidden" id="container-id-display"></span>
             </div>
 
-            <!-- Buttons -->
             <div class="btn-group">
                 <button class="btn btn-launch" id="btn-launch" onclick="launchLab()">
                     🚀 Launch Lab
@@ -455,7 +432,6 @@
         </div>
     </div>
 
-    <!-- Info Strip -->
     <div class="info-strip">
         <div class="info-card">
             <div class="info-card-label">Image</div>
@@ -475,9 +451,7 @@
         </div>
     </div>
 
-    <!-- Terminal Window -->
     <div class="terminal-wrapper">
-        <!-- macOS-style title bar -->
         <div class="terminal-titlebar">
             <div class="terminal-dots">
                 <div class="terminal-dot dot-red"></div>
@@ -488,7 +462,6 @@
             <div style="width:52px"></div>
         </div>
 
-        <!-- Splash screen (shown before launch) -->
         <div id="splash">
             <div class="splash-icon">🐧</div>
             <div class="splash-title">Ready to Launch</div>
@@ -501,7 +474,6 @@
             </div>
         </div>
 
-        <!-- Loading screen (shown while container starts) -->
         <div id="loading-overlay">
             <div class="spinner"></div>
             <div class="loading-text">Starting your Ubuntu environment...</div>
@@ -512,31 +484,25 @@
             </div>
         </div>
 
-        <!-- Xterm.js terminal (shown after launch) -->
         <div id="terminal" class="hidden"></div>
     </div>
 
 </main>
 
-<!-- Toast notification -->
 <div id="toast"></div>
 
-<!-- ══════════════════ JAVASCRIPT ══════════════════ -->
 <script>
-    // ── State ──────────────────────────────────────────
     let term = null;           // Xterm.js instance
     let fitAddon = null;       // Addon to resize terminal
     let socket = null;         // WebSocket connection
     let containerId = null;    // Current Docker container ID
     let statusInterval = null; // Polling interval for container status
 
-    // ── Launch Lab ─────────────────────────────────────
     async function launchLab() {
         setUIState('loading');
         animateLoadingSteps();
 
         try {
-            // Step 1: Ask backend to create a Docker container
             const response = await fetch('/api/launch/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -550,14 +516,11 @@
 
             containerId = data.container_id;
 
-            // Step 2: Short delay so container fully starts
             await sleep(1000);
 
-            // Step 3: Open WebSocket and initialize terminal
             initTerminal();
             connectWebSocket();
 
-            // Update UI
             document.getElementById('container-id-display').textContent = data.container_short_id;
             setUIState('running');
             startStatusPolling();
