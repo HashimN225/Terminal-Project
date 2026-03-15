@@ -107,9 +107,11 @@ docker pull ubuntu
 # Run the development server
 daphne -b 0.0.0.0 -p 8000 terminal_lab.asgi:application
 
+```
+
 Then open your browser and go to `http://localhost:8000`.
 
-```
+
 
 ## Usage
 
