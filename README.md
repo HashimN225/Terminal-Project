@@ -85,6 +85,9 @@ Ubuntu Docker Container
 
 ```bash
 
+# Pull the Ubuntu Docker image (first time only)
+docker pull ubuntu
+
 # Clone the repository
 git clone https://github.com/HashimN225/Terminal-Project.git
 cd Terminal-Project/termidock
