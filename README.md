@@ -87,16 +87,16 @@ Ubuntu Docker Container
 
 # Clone the repository
 git clone https://github.com/HashimN225/Terminal-Project.git
-cd Terminal_project/termidock
+cd Terminal-Project/termidock
 
-# create and activate python virtual environment
-python -m venv myvenv
-
-# On Linux/Mac
-source venv/bin/activate
+# Create and activate virtual environment
+# Mac and Linux
+python3 -m venv myvenv
+source myvenv/bin/activate
 
 # Windows
-venv\Scripts\activate
+python -m venv myvenv
+myvenv\Scripts\activate
 
 # Install Python dependencies
 pip install -r requirements.txt
@@ -106,8 +106,6 @@ docker pull ubuntu
 
 # Run the development server
 daphne -b 0.0.0.0 -p 8000 terminal_lab.asgi:application
-```
-
 Then open your browser and go to `http://localhost:8000`.
 
 ---
