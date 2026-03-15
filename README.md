@@ -101,9 +101,6 @@ myvenv\Scripts\activate
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Pull the Ubuntu Docker image (first time only)
-docker pull ubuntu
-
 # Run the development server
 daphne -b 0.0.0.0 -p 8000 terminal_lab.asgi:application
 
