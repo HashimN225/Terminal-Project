@@ -85,6 +85,10 @@ Ubuntu Docker Container
 
 ```bash
 
+# Clone the repository
+git clone https://github.com/HashimN225/Terminal-Project.git
+cd Terminal_project/termidock
+
 # create and activate python virtual environment
 python -m venv myvenv
 
@@ -93,10 +97,6 @@ source venv/bin/activate
 
 # Windows
 venv\Scripts\activate
-
-# Clone the repository
-git clone https://github.com/HashimN225/Terminal-Project.git
-cd Terminal_project/termidock
 
 # Install Python dependencies
 pip install -r requirements.txt
