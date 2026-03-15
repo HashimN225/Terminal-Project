@@ -21,13 +21,11 @@ def launch_lab(request):
     try:
         client = docker.from_env()
 
-        # Pull ubuntu image if not present (first time only)
         try:
             client.images.get('ubuntu:latest')
         except docker.errors.ImageNotFound:
             client.images.pull('ubuntu:latest')
 
-        # Create and start a new Ubuntu container
         container = client.containers.run(
             'ubuntu:latest',
             '/bin/bash',
@@ -76,7 +74,7 @@ def stop_lab(request):
             container.stop(timeout=3)
             container.remove()
         except docker.errors.NotFound:
-            pass  # Already removed, that's fine
+            pass  # Already removed
 
         return JsonResponse({'status': 'success'})
 
@@ -111,7 +109,6 @@ def reset_lab(request):
 
         client = docker.from_env()
 
-        # Stop and remove old container
         if old_container_id:
             try:
                 old = client.containers.get(old_container_id)
@@ -120,7 +117,6 @@ def reset_lab(request):
             except docker.errors.NotFound:
                 pass
 
-        # Start a new container
         container = client.containers.run(
             'ubuntu:latest',
             '/bin/bash',

@@ -22,14 +22,12 @@ class TerminalConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Attach to the running container in a thread (blocking operation)
         success = await asyncio.get_event_loop().run_in_executor(
             None, self._attach_to_container
         )
 
         if success:
             self.running = True
-            # Start background thread to continuously read container output
             self.read_thread = threading.Thread(target=self._read_output, daemon=True)
             self.read_thread.start()
             await self.send(text_data="\r\n\033[32m Connected to Ubuntu container!\033[0m\r\n\r\n")
@@ -49,8 +47,6 @@ class TerminalConsumer(AsyncWebsocketConsumer):
             if self.container.status != 'running':
                 return False
 
-            # exec_create = opens a bash shell inside the running container
-            # This is like doing: docker exec -it <container> /bin/bash
             exec_instance = client.api.exec_create(
                 self.container_id,
                 '/bin/bash',
@@ -60,16 +56,14 @@ class TerminalConsumer(AsyncWebsocketConsumer):
                 stderr=True,
             )
 
-            # exec_start = actually starts the shell and gives us a socket
             self.exec_socket = client.api.exec_start(
                 exec_instance['Id'],
                 socket=True,
                 tty=True,
             )
 
-            # Get the underlying raw socket for direct read/write
             self.sock = self.exec_socket._sock
-            self.sock.settimeout(0.1)  # non-blocking with short timeout
+            self.sock.settimeout(0.1)  
             return True
 
         except Exception as e:
@@ -85,15 +79,12 @@ class TerminalConsumer(AsyncWebsocketConsumer):
 
         while self.running:
             try:
-                # Read raw bytes from container shell
                 data = self.sock.recv(4096)
                 if data:
-                    # Decode and send to browser (Xterm.js will display it)
                     loop.run_until_complete(
                         self.send(text_data=data.decode('utf-8', errors='replace'))
                     )
             except OSError:
-                # Timeout (0.1s) - no data right now, keep looping
                 continue
             except Exception as e:
                 if self.running:
@@ -112,7 +103,6 @@ class TerminalConsumer(AsyncWebsocketConsumer):
 
         try:
             if text_data:
-                # Send keystrokes to container's bash shell
                 self.sock.send(text_data.encode('utf-8'))
         except Exception as e:
             print(f"[TerminalConsumer] Error sending to container: {e}")
