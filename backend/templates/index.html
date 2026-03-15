@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ubuntu Labs</title>
+
+    <!-- Xterm.js — renders the terminal in browser -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <!-- Xterm FitAddon — makes terminal resize to fill its container -->
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+
+    <style>
+        /* ── Reset & Base ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Top Navigation Bar ── */
+        .navbar {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 0 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #e6edf3;
+            text-decoration: none;
+        }
+
+        .navbar-brand .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #8b949e;
+        }
+
+        /* ── Main Layout ── */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* ── Lab Header Card ── */
+        .lab-header {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .lab-info h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #e6edf3;
+            margin-bottom: 6px;
+        }
+
+        .lab-info p {
+            font-size: 14px;
+            color: #8b949e;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        .lab-badges {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-ubuntu { background: #e95420; color: white; }
+        .badge-docker { background: #2496ed20; color: #2496ed; border: 1px solid #2496ed40; }
+        .badge-interactive { background: #238636; color: #3fb950; border: 1px solid #238636; font-size: 11px; }
+
+        /* ── Control Buttons ── */
+        .lab-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        /* ── Status Indicator ── */
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #8b949e;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #30363d;
+            transition: background 0.3s;
+        }
+
+        .status-dot.running { background: #3fb950; box-shadow: 0 0 6px #3fb95060; animation: pulse 2s infinite; }
+        .status-dot.stopped { background: #f85149; }
+        .status-dot.starting { background: #f0883e; animation: pulse 0.8s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .status-text { font-weight: 500; }
+        .status-text.running { color: #3fb950; }
+        .status-text.stopped { color: #f85149; }
+        .status-text.starting { color: #f0883e; }
+
+        /* Container ID display */
+        .container-id {
+            font-size: 11px;
+            color: #6e7681;
+            font-family: 'Courier New', monospace;
+            background: #0d1117;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid #30363d;
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            padding: 9px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-launch {
+            background: linear-gradient(135deg, #238636, #2ea043);
+            color: white;
+        }
+        .btn-launch:hover:not(:disabled) { background: linear-gradient(135deg, #2ea043, #3fb950); transform: translateY(-1px); }
+
+        .btn-stop {
+            background: #21262d;
+            color: #f85149;
+            border: 1px solid #f8514940;
+        }
+        .btn-stop:hover:not(:disabled) { background: #f8514915; }
+
+        .btn-reset {
+            background: #21262d;
+            color: #f0883e;
+            border: 1px solid #f0883e40;
+        }
+        .btn-reset:hover:not(:disabled) { background: #f0883e15; }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ── Terminal Container ── */
+        .terminal-wrapper {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 480px;
+        }
+
+        /* Terminal title bar */
+        .terminal-titlebar {
+            background: #21262d;
+            border-bottom: 1px solid #30363d;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 7px;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .terminal-title {
+            font-size: 13px;
+            color: #8b949e;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* The actual xterm.js terminal goes here */
+        #terminal {
+            flex: 1;
+            padding: 12px;
+            background: #0d1117;
+        }
+
+        /* ── Splash Screen (shown before lab is launched) ── */
+        #splash {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: #0d1117;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .splash-icon {
+            font-size: 56px;
+            line-height: 1;
+        }
+
+        .splash-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #e6edf3;
+        }
+
+        .splash-subtitle {
+            font-size: 14px;
+            color: #8b949e;
+            max-width: 360px;
+            line-height: 1.6;
+        }
+
+        .splash-hint {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #8b949e;
+            margin-top: 8px;
+        }
+
+        /* ── Loading Overlay ── */
+        #loading-overlay {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            background: #0d1117;
+            padding: 40px;
+            flex: 1;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid #30363d;
+            border-top-color: #3fb950;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            font-size: 15px;
+            color: #8b949e;
+        }
+
+        .loading-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+            color: #6e7681;
+        }
+
+        .loading-step { display: flex; align-items: center; gap: 8px; }
+        .loading-step.done { color: #3fb950; }
+        .loading-step.active { color: #f0883e; }
+
+        /* ── Info Strip ── */
+        .info-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .info-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 14px 18px;
+        }
+
+        .info-card-label {
+            font-size: 11px;
+            color: #6e7681;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-card-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e6edf3;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ── Toast notifications ── */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-size: 14px;
+            color: #e6edf3;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 999;
+            max-width: 300px;
+        }
+
+        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast.success { border-color: #238636; }
+        #toast.error { border-color: #f85149; }
+
+        /* Hidden class */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════ NAVBAR ══════════════════ -->
+<nav class="navbar">
+    <a class="navbar-brand" href="#">
+        <div class="logo-icon">🐧</div>
+        Ubuntu Labs
+    </a>
+    <div class="navbar-right">
+        <span>Powered by Docker</span>
+        <span>•</span>
+        <span>Interactive Terminal</span>
+    </div>
+</nav>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<main class="main">
+
+    <!-- Lab Header Card -->
+    <div class="lab-header">
+        <div class="lab-info">
+            <h1>🖥️ Ubuntu Interactive Lab</h1>
+            <p>Launch a real Ubuntu container and practice Linux commands directly in your browser. Your environment is isolated and safe.</p>
+            <div class="lab-badges">
+                <span class="badge badge-ubuntu">Ubuntu 22.04</span>
+                <span class="badge badge-docker">Docker</span>
+                <span class="badge badge-interactive">● Interactive</span>
+            </div>
+        </div>
+
+        <div class="lab-controls">
+            <!-- Status Row -->
+            <div class="status-row">
+                <div class="status-dot" id="status-dot"></div>
+                <span class="status-text" id="status-text">Not started</span>
+                <span class="container-id hidden" id="container-id-display"></span>
+            </div>
+
+            <!-- Buttons -->
+            <div class="btn-group">
+                <button class="btn btn-launch" id="btn-launch" onclick="launchLab()">
+                    🚀 Launch Lab
+                </button>
+                <button class="btn btn-reset hidden" id="btn-reset" onclick="resetLab()">
+                    🔄 Reset Lab
+                </button>
+                <button class="btn btn-stop hidden" id="btn-stop" onclick="stopLab()">
+                    ⏹ End Lab
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Strip -->
+    <div class="info-strip">
+        <div class="info-card">
+            <div class="info-card-label">Image</div>
+            <div class="info-card-value">ubuntu:latest</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-label">Memory Limit</div>
+            <div class="info-card-value">256 MB</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-label">CPU Limit</div>
+            <div class="info-card-value">50%</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-label">Shell</div>
+            <div class="info-card-value">/bin/bash</div>
+        </div>
+    </div>
+
+    <!-- Terminal Window -->
+    <div class="terminal-wrapper">
+        <!-- macOS-style title bar -->
+        <div class="terminal-titlebar">
+            <div class="terminal-dots">
+                <div class="terminal-dot dot-red"></div>
+                <div class="terminal-dot dot-yellow"></div>
+                <div class="terminal-dot dot-green"></div>
+            </div>
+            <span class="terminal-title" id="terminal-title">bash — ubuntu</span>
+            <div style="width:52px"></div>
+        </div>
+
+        <!-- Splash screen (shown before launch) -->
+        <div id="splash">
+            <div class="splash-icon">🐧</div>
+            <div class="splash-title">Ready to Launch</div>
+            <div class="splash-subtitle">
+                Click <strong>Launch Lab</strong> to start a real Ubuntu container.
+                You'll get an interactive bash shell right here in your browser.
+            </div>
+            <div class="splash-hint">
+                💡 Try commands like <code>ls</code>, <code>pwd</code>, <code>echo "hello"</code>
+            </div>
+        </div>
+
+        <!-- Loading screen (shown while container starts) -->
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+            <div class="loading-text">Starting your Ubuntu environment...</div>
+            <div class="loading-steps">
+                <div class="loading-step" id="step-1">⬜ Creating container</div>
+                <div class="loading-step" id="step-2">⬜ Starting Ubuntu</div>
+                <div class="loading-step" id="step-3">⬜ Opening terminal</div>
+            </div>
+        </div>
+
+        <!-- Xterm.js terminal (shown after launch) -->
+        <div id="terminal" class="hidden"></div>
+    </div>
+
+</main>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<!-- ══════════════════ JAVASCRIPT ══════════════════ -->
+<script>
+    // ── State ──────────────────────────────────────────
+    let term = null;           // Xterm.js instance
+    let fitAddon = null;       // Addon to resize terminal
+    let socket = null;         // WebSocket connection
+    let containerId = null;    // Current Docker container ID
+    let statusInterval = null; // Polling interval for container status
+
+    // ── Launch Lab ─────────────────────────────────────
+    async function launchLab() {
+        setUIState('loading');
+        animateLoadingSteps();
+
+        try {
+            // Step 1: Ask backend to create a Docker container
+            const response = await fetch('/api/launch/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+            const data = await response.json();
+
+            if (data.status !== 'success') {
+                throw new Error(data.message || 'Failed to launch container');
+            }
+
+            containerId = data.container_id;
+
+            // Step 2: Short delay so container fully starts
+            await sleep(1000);
+
+            // Step 3: Open WebSocket and initialize terminal
+            initTerminal();
+            connectWebSocket();
+
+            // Update UI
+            document.getElementById('container-id-display').textContent = data.container_short_id;
+            setUIState('running');
+            startStatusPolling();
+            showToast('Lab launched successfully!', 'success');
+
+        } catch (err) {
+            console.error('Launch error:', err);
+            setUIState('idle');
+            showToast('Error: ' + err.message, 'error');
+        }
+    }
+
+    // ── Initialize Xterm.js Terminal ───────────────────
+    function initTerminal() {
+        // Create terminal instance with configuration
+        term = new Terminal({
+            cursorBlink: true,
+            cursorStyle: 'block',
+            fontSize: 14,
+            fontFamily: "'Cascadia Code', 'Fira Code', 'Courier New', monospace",
+            lineHeight: 1.4,
+            theme: {
+                background: '#0d1117',
+                foreground: '#e6edf3',
+                cursor: '#e6edf3',
+                cursorAccent: '#0d1117',
+                black: '#484f58',
+                red: '#ff7b72',
+                green: '#3fb950',
+                yellow: '#d29922',
+                blue: '#58a6ff',
+                magenta: '#bc8cff',
+                cyan: '#39c5cf',
+                white: '#b1bac4',
+                brightBlack: '#6e7681',
+                brightRed: '#ffa198',
+                brightGreen: '#56d364',
+                brightYellow: '#e3b341',
+                brightBlue: '#79c0ff',
+                brightMagenta: '#d2a8ff',
+                brightCyan: '#56d4dd',
+                brightWhite: '#f0f6fc',
+            },
+            scrollback: 1000,
+            allowTransparency: true,
+        });
+
+        // FitAddon makes terminal fill its container div
+        fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+
+        // Show terminal div, attach xterm to it
+        const termDiv = document.getElementById('terminal');
+        termDiv.classList.remove('hidden');
+        term.open(termDiv);
+        fitAddon.fit();
+
+        // When user types → send to server via WebSocket
+        term.onData((data) => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(data);
+            }
+        });
+
+        // Resize terminal when window resizes
+        window.addEventListener('resize', () => {
+            if (fitAddon) fitAddon.fit();
+        });
+    }
+
+    // ── Connect WebSocket to Django Channels ───────────
+    function connectWebSocket() {
+        const wsUrl = `ws://${window.location.host}/ws/terminal/${containerId}/`;
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => {
+            console.log('WebSocket connected');
+        };
+
+        // When server sends data (container output) → display in terminal
+        socket.onmessage = (event) => {
+            if (term) term.write(event.data);
+        };
+
+        socket.onclose = (event) => {
+            if (term) {
+                term.write('\r\n\r\n\033[31m--- Connection closed ---\033[0m\r\n');
+            }
+            console.log('WebSocket closed:', event.code);
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            if (term) {
+                term.write('\r\n\033[31mWebSocket connection error\033[0m\r\n');
+            }
+        };
+    }
+
+    // ── Stop Lab ───────────────────────────────────────
+    async function stopLab() {
+        if (!containerId) return;
+
+        if (!confirm('Are you sure you want to end the lab? All your work will be lost.')) return;
+
+        try {
+            // Close WebSocket first
+            if (socket) socket.close();
+
+            // Ask backend to stop and remove container
+            await fetch('/api/stop/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ container_id: containerId }),
+            });
+
+            containerId = null;
+            stopStatusPolling();
+            setUIState('idle');
+            showToast('Lab stopped and removed.', 'success');
+
+        } catch (err) {
+            showToast('Error stopping lab: ' + err.message, 'error');
+        }
+    }
+
+    // ── Reset Lab ──────────────────────────────────────
+    async function resetLab() {
+        if (!confirm('Reset will destroy your current session and start fresh. Continue?')) return;
+
+        try {
+            // Close existing WebSocket
+            if (socket) socket.close();
+
+            // Destroy old terminal
+            if (term) { term.dispose(); term = null; }
+
+            setUIState('loading');
+            animateLoadingSteps();
+
+            // Ask backend to stop old container and create new one
+            const response = await fetch('/api/reset/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ container_id: containerId }),
+            });
+
+            const data = await response.json();
+            if (data.status !== 'success') throw new Error(data.message);
+
+            containerId = data.container_id;
+            await sleep(1000);
+
+            initTerminal();
+            connectWebSocket();
+
+            document.getElementById('container-id-display').textContent = data.container_short_id;
+            setUIState('running');
+            showToast('Lab reset! Fresh Ubuntu environment ready.', 'success');
+
+        } catch (err) {
+            showToast('Error resetting lab: ' + err.message, 'error');
+            setUIState('idle');
+        }
+    }
+
+    // ── Poll Container Status ──────────────────────────
+    function startStatusPolling() {
+        statusInterval = setInterval(async () => {
+            if (!containerId) return;
+            try {
+                const res = await fetch(`/api/status/${containerId}/`);
+                const data = await res.json();
+                if (data.container_status === 'removed' || data.container_status === 'exited') {
+                    stopStatusPolling();
+                    setUIState('idle');
+                    showToast('Container stopped unexpectedly.', 'error');
+                }
+            } catch (e) { /* ignore polling errors */ }
+        }, 5000); // poll every 5 seconds
+    }
+
+    function stopStatusPolling() {
+        if (statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+    }
+
+    // ── UI State Machine ───────────────────────────────
+    function setUIState(state) {
+        const splash = document.getElementById('splash');
+        const loading = document.getElementById('loading-overlay');
+        const termDiv = document.getElementById('terminal');
+        const btnLaunch = document.getElementById('btn-launch');
+        const btnStop = document.getElementById('btn-stop');
+        const btnReset = document.getElementById('btn-reset');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const containerIdDisplay = document.getElementById('container-id-display');
+
+        // Hide all panels first
+        splash.style.display = 'none';
+        loading.style.display = 'none';
+
+        if (state === 'idle') {
+            splash.style.display = 'flex';
+            termDiv.classList.add('hidden');
+            btnLaunch.classList.remove('hidden');
+            btnStop.classList.add('hidden');
+            btnReset.classList.add('hidden');
+            containerIdDisplay.classList.add('hidden');
+            statusDot.className = 'status-dot';
+            statusText.textContent = 'Not started';
+            statusText.className = 'status-text';
+            document.getElementById('terminal-title').textContent = 'bash — ubuntu';
+        }
+
+        else if (state === 'loading') {
+            loading.style.display = 'flex';
+            termDiv.classList.add('hidden');
+            btnLaunch.disabled = true;
+            statusDot.className = 'status-dot starting';
+            statusText.textContent = 'Starting...';
+            statusText.className = 'status-text starting';
+        }
+
+        else if (state === 'running') {
+            termDiv.classList.remove('hidden');
+            btnLaunch.classList.add('hidden');
+            btnStop.classList.remove('hidden');
+            btnReset.classList.remove('hidden');
+            containerIdDisplay.classList.remove('hidden');
+            btnLaunch.disabled = false;
+            statusDot.className = 'status-dot running';
+            statusText.textContent = 'Running';
+            statusText.className = 'status-text running';
+            document.getElementById('terminal-title').textContent = `bash — ubuntu (${document.getElementById('container-id-display').textContent})`;
+            if (fitAddon) fitAddon.fit();
+        }
+    }
+
+    // ── Loading Step Animation ─────────────────────────
+    async function animateLoadingSteps() {
+        const steps = ['step-1', 'step-2', 'step-3'];
+        const labels = ['✅ Creating container', '✅ Starting Ubuntu', '✅ Opening terminal'];
+        const activeLabels = ['⏳ Creating container...', '⏳ Starting Ubuntu...', '⏳ Opening terminal...'];
+
+        // Reset all steps
+        steps.forEach((id, i) => {
+            document.getElementById(id).textContent = `⬜ ${['Creating container', 'Starting Ubuntu', 'Opening terminal'][i]}`;
+            document.getElementById(id).className = 'loading-step';
+        });
+
+        for (let i = 0; i < steps.length; i++) {
+            document.getElementById(steps[i]).textContent = activeLabels[i];
+            document.getElementById(steps[i]).className = 'loading-step active';
+            await sleep(600);
+            document.getElementById(steps[i]).textContent = labels[i];
+            document.getElementById(steps[i]).className = 'loading-step done';
+        }
+    }
+
+    // ── Toast Notification ─────────────────────────────
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `show ${type}`;
+        setTimeout(() => { toast.className = ''; }, 3500);
+    }
+
+    // ── Utility ────────────────────────────────────────
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (containerId) {
+            navigator.sendBeacon('/api/stop/', JSON.stringify({ container_id: containerId }));
+        }
+    });
+</script>
+
+</body>
+</html>
