@@ -1,4 +1,4 @@
-# TermiDock 🖥️
+# Termidock 🖥️
 
 A browser based terminal emulator built as part of a hiring task. Users can launch an isolated Ubuntu Docker container directly from the browser, type commands, and see live output all in real time via WebSockets.
 
