@@ -106,15 +106,14 @@ docker pull ubuntu
 
 # Run the development server
 daphne -b 0.0.0.0 -p 8000 terminal_lab.asgi:application
-Then open your browser and go to `http://localhost:8000`.
 
----
+Then open your browser and go to `http://localhost:8000`.
 
 ```
 
 ## Usage
 
-1. Open `http://localhost:8000` in your browser.
+1. After opening, `http://localhost:8000` in your browser.
 2. Click **Launch Lab** — a Docker container starts and the terminal appears.
 3. Type any Linux command (e.g., `ls`, `pwd`, `echo hello`) and hit Enter.
 4. The command runs inside the container and output appears instantly.
