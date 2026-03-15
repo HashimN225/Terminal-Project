@@ -110,6 +110,8 @@ Then open your browser and go to `http://localhost:8000`.
 
 ---
 
+```
+
 ## Usage
 
 1. Open `http://localhost:8000` in your browser.
