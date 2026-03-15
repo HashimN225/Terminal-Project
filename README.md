@@ -27,7 +27,7 @@ A browser based terminal emulator built as part of a hiring task. Users can laun
 ## Project Structure
 
 ```
-Terminal_project/
+Terminal-project/
 ├── README.md
 └── termidock/
     ├── manage.py                  # Django management script
